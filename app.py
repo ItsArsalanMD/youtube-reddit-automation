@@ -36,6 +36,8 @@ if 'script' not in st.session_state:
     st.session_state.script = ""
 if 'metadata' not in st.session_state:
     st.session_state.metadata = {"title": "", "description": ""}
+if 'visual_hook_title' not in st.session_state:
+    st.session_state.visual_hook_title = ""
 if 'video_ready' not in st.session_state:
     st.session_state.video_ready = False
 
@@ -66,6 +68,13 @@ if st.session_state.selected_post:
                 st.session_state.selected_post['body']
             )
             st.session_state.metadata = gen.generate_metadata(st.session_state.script)
+            
+            # Extract first sentence for visual hook
+            import re
+            sentences = re.split(r'(?<=[.!?]) +', st.session_state.script)
+            if sentences:
+                st.session_state.visual_hook_title = sentences[0].strip()
+            
             st.success("Script and Metadata generated!")
 
 if st.session_state.script:
@@ -78,8 +87,9 @@ if st.session_state.script:
     
     with col2:
         st.subheader("YouTube Metadata")
-        st.session_state.metadata['title'] = st.text_input("Title", value=st.session_state.metadata['title'])
-        st.session_state.metadata['description'] = st.text_area("Description", value=st.session_state.metadata['description'], height=200)
+        st.session_state.metadata['title'] = st.text_input("YouTube Title (Marketing)", value=st.session_state.metadata['title'])
+        st.session_state.visual_hook_title = st.text_input("Visual Hook Title (On-screen)", value=st.session_state.visual_hook_title)
+        st.session_state.metadata['description'] = st.text_area("Description", value=st.session_state.metadata['description'], height=150)
 
 # 4. Render Video
 if st.session_state.script:
@@ -117,7 +127,7 @@ if st.session_state.script:
             st.write("Step 2.5/3: Generating Hook Overlay...")
             title_gen = TitleGenerator()
             overlay_path = os.path.join(base_dir, "overlays", f"{safe_title}.png")
-            title_gen.generate_title_image(st.session_state.metadata['title'], overlay_path, subreddit=f"r/{subreddit}")
+            title_gen.generate_title_image(st.session_state.visual_hook_title, overlay_path, subreddit=f"r/{subreddit}")
             
             # Step C: Render
             st.write("Step 3/3: Rendering Video (FFmpeg)...")
