@@ -83,9 +83,9 @@ class VideoRenderer:
             if w and h and w > h:
                 required_w = int(h * (9/16))
                 print(f"Horizontal video detected ({w}x{h}). Auto-cropping to {required_w}x{h} (9:16).")
-                vf_base = f"crop={required_w}:{h}:(iw-{required_w})/2:0,scale=1080:1920[bg]"
+                vf_base = f"crop={required_w}:{h}:(iw-{required_w})/2:0,scale=1080:1920,split[bg][bg_overlay]"
             else:
-                vf_base = "scale=1080:1920[bg]"
+                vf_base = "scale=1080:1920,split[bg][bg_overlay]"
 
         input_args.extend(['-i', audio_path])
         
@@ -97,9 +97,11 @@ class VideoRenderer:
         if overlay_path and os.path.exists(overlay_path):
             input_args.extend(['-i', overlay_path])
             # The background is [0:v], audio is [1:a], overlay is [2:v]
-            # Overlay [2:v] on top of [sub_out] 
             filter_complex.append(sub_filter)
-            filter_complex.append(f"[sub_out][2:v]overlay=(W-w)/2:(H-h)/2:enable='between(t,0,3)'[final_v]")
+            # 1. Hide captions for first 3 seconds by overlaying clean background back on top
+            filter_complex.append(f"[sub_out][bg_overlay]overlay=enable='between(t,0,3)'[no_subs_hook]")
+            # 2. Overlay the Reddit box on top of the clean area
+            filter_complex.append(f"[no_subs_hook][2:v]overlay=(W-w)/2:(H-h)/2:enable='between(t,0,3)'[final_v]")
         else:
             # Route [sub_out] directly to output
             sub_filter = sub_filter.replace("[sub_out]", "[final_v]")

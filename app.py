@@ -117,7 +117,7 @@ if st.session_state.script:
             st.write("Step 2.5/3: Generating Hook Overlay...")
             title_gen = TitleGenerator()
             overlay_path = os.path.join(base_dir, "overlays", f"{safe_title}.png")
-            title_gen.generate_title_image(st.session_state.metadata['title'], f"{safe_title}.png", subreddit=f"r/{subreddit}")
+            title_gen.generate_title_image(st.session_state.metadata['title'], overlay_path, subreddit=f"r/{subreddit}")
             
             # Step C: Render
             st.write("Step 3/3: Rendering Video (FFmpeg)...")
