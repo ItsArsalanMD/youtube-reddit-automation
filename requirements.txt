@@ -1,0 +1,9 @@
+praw
+google-generativeai
+edge-tts
+openai-whisper
+streamlit
+google-api-python-client
+google-auth-oauthlib
+python-dotenv
+ffmpeg-python
