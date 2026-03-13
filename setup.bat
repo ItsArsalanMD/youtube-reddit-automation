@@ -28,7 +28,7 @@ if %errorlevel% neq 0 (
     echo.
     echo To fix this:
     echo 1. Download Git from: https://git-scm.com/downloads
-    echo 2. Run the installer (you can keep the default settings).
+    echo 2. Run the installer ^(you can keep the default settings^).
     echo 3. Restart your computer and run this script again.
     echo.
     pause
@@ -43,7 +43,7 @@ if %errorlevel% neq 0 (
     echo How to install FFmpeg:
     echo 1. Visit: https://www.gyan.dev/ffmpeg/builds/
     echo 2. Download "ffmpeg-git-full.7z" (or similar zip).
-    echo 3. Extract it to a folder (e.g., C:\ffmpeg).
+    echo 3. Extract it to a folder ^(e.g., C:\ffmpeg^).
     echo 4. You will need to put this path in the .env file later.
     echo.
     set /p CONTINUE="Do you want to continue with setup? (Y/N): "
@@ -111,7 +111,7 @@ if exist .env (
         echo FFMPEG_PATH=ffmpeg >> .env
     ) else (
         echo.
-        echo Please enter the full path to ffmpeg.exe (e.g., C:\ffmpeg\bin\ffmpeg.exe)
+        echo Please enter the full path to ffmpeg.exe ^(e.g., C:\ffmpeg\bin\ffmpeg.exe^)
         echo Leave empty if you will add it manually later.
         set /p FF_PATH="FFmpeg Path: "
         echo FFMPEG_PATH=!FF_PATH! >> .env
