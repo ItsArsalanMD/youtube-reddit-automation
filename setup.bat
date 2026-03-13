@@ -8,23 +8,32 @@ echo.
 
 :: 1. Check for Python (Check 'python' then 'py')
 set PY_CMD=python
-where !PY_CMD! >nul 2>&1
+!PY_CMD! --version >nul 2>&1
 if %errorlevel% neq 0 (
     set PY_CMD=py
-    where !PY_CMD! >nul 2>&1
-    if %errorlevel% neq 0 goto :NO_PYTHON
+    !PY_CMD! --version >nul 2>&1
+    if %errorlevel% neq 0 (
+        :: Final check: try python3
+        set PY_CMD=python3
+        !PY_CMD! --version >nul 2>&1
+        if %errorlevel% neq 0 goto :NO_PYTHON
+    )
 )
 echo [INFO] Using !PY_CMD! for installation.
 goto :CHECK_GIT
 
 :NO_PYTHON
-echo [ERROR] Python was NOT found. ^(!PY_CMD!^)
+echo [ERROR] Python was NOT found.
 echo.
 echo To fix this:
 echo 1. Download Python from: https://www.python.org/downloads/
 echo 2. Run the installer.
 echo 3. IMPORTANT: Check the box "Add Python to PATH" before clicking Install.
-echo 4. Restart your computer and run this script again.
+echo.
+echo If Python IS installed but you still see this:
+echo 1. Open Windows Start menu and type "App execution aliases".
+echo 2. Disable the switches for "python.exe" and "python3.exe".
+echo 3. Restart your computer and try again.
 echo.
 pause
 exit /b
