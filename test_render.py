@@ -40,9 +40,15 @@ def test_full_pipeline():
         return
 
     # 2. Render Video (Strip background audio, fix duration)
-    print("\n--- Step 2: Rendering video with audio stripping and duration fix ---")
+    print("\n--- Step 1.5: Generating Hook Overlay ---")
+    from modules.title_generator import TitleGenerator
+    title_gen = TitleGenerator()
+    overlay_path = "d:/Automation/data/overlays/test_overlay.png"
+    title_gen.generate_title_image("AITA for refusing to pay for my sister's extravagant destination wedding even though I make good money?", overlay_path)
+    
+    print("\n--- Step 2: Rendering video with overlay and audio stripping ---")
     renderer = VideoRenderer(background_video="d:/Automation/assets/minecraft_parkour.mp4")
-    success = renderer.render_video(audio_path, srt_path, output_path)
+    success = renderer.render_video(audio_path, srt_path, output_path, overlay_path=overlay_path)
     
     if success:
         end_time = time.time()

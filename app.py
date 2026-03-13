@@ -6,6 +6,7 @@ from modules.script_generator import ScriptGenerator
 from modules.tts_generator import run_tts
 from modules.caption_generator import CaptionGenerator
 from modules.video_renderer import VideoRenderer
+from modules.title_generator import TitleGenerator
 from modules.youtube_uploader import YouTubeUploader
 from dotenv import load_dotenv
 
@@ -112,6 +113,12 @@ if st.session_state.script:
             cap_gen = CaptionGenerator(model_size="base")
             cap_gen.generate_srt(audio_path, srt_path)
             
+            # Step B2: Title Overlay
+            st.write("Step 2.5/3: Generating Hook Overlay...")
+            title_gen = TitleGenerator()
+            overlay_path = os.path.join(base_dir, "overlays", f"{safe_title}.png")
+            title_gen.generate_title_image(st.session_state.metadata['title'], f"{safe_title}.png", subreddit=f"r/{subreddit}")
+            
             # Step C: Render
             st.write("Step 3/3: Rendering Video (FFmpeg)...")
             
@@ -129,7 +136,7 @@ if st.session_state.script:
                 st.warning("No .mp4 files found in 'assets/'. Using placeholder.")
                 renderer = VideoRenderer(background_video="d:/Automation/assets/placeholder.mp4")
                 
-            success = renderer.render_video(audio_path, srt_path, video_path)
+            success = renderer.render_video(audio_path, srt_path, video_path, overlay_path=overlay_path)
             
             if success:
                 st.session_state.video_ready = True

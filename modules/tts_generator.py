@@ -3,22 +3,23 @@ import edge_tts
 import os
 
 class TTSGenerator:
-    def __init__(self, voice="en-US-GuyNeural"):
+    def __init__(self, voice="en-US-GuyNeural", rate="+20%"):
         self.voice = voice
+        self.rate = rate
 
     async def generate_audio(self, text, output_path):
         """
         Generates audio from text and saves it to output_path.
         """
-        communicate = edge_tts.Communicate(text, self.voice)
+        communicate = edge_tts.Communicate(text, self.voice, rate=self.rate)
         await communicate.save(output_path)
         return output_path
 
-def run_tts(text, output_path, voice="en-US-GuyNeural"):
+def run_tts(text, output_path, voice="en-US-GuyNeural", rate="+20%"):
     """
     Sync wrapper for the async generate_audio function.
     """
-    generator = TTSGenerator(voice)
+    generator = TTSGenerator(voice, rate)
     asyncio.run(generator.generate_audio(text, output_path))
     return output_path
 
