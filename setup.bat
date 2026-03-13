@@ -6,21 +6,19 @@ echo    Reddit-to-Shorts Automation - Easy Installer
 echo ======================================================
 echo.
 
-:: 1. Check for Python
-where python >nul 2>&1
-if %errorlevel% neq 0 goto :NO_PYTHON
-
-:: 2. Check for Git
-where git >nul 2>&1
-if %errorlevel% neq 0 goto :NO_GIT
-
-:: 3. Check for FFmpeg
-where ffmpeg >nul 2>&1
-if %errorlevel% neq 0 goto :FFMPEG_WARNING
-goto :CHECK_FILES
+:: 1. Check for Python (Check 'python' then 'py')
+set PY_CMD=python
+where !PY_CMD! >nul 2>&1
+if %errorlevel% neq 0 (
+    set PY_CMD=py
+    where !PY_CMD! >nul 2>&1
+    if %errorlevel% neq 0 goto :NO_PYTHON
+)
+echo [INFO] Using !PY_CMD! for installation.
+goto :CHECK_GIT
 
 :NO_PYTHON
-echo [ERROR] Python is NOT installed or not in your PATH.
+echo [ERROR] Python was NOT found. ^(!PY_CMD!^)
 echo.
 echo To fix this:
 echo 1. Download Python from: https://www.python.org/downloads/
@@ -30,6 +28,17 @@ echo 4. Restart your computer and run this script again.
 echo.
 pause
 exit /b
+
+:CHECK_GIT
+:: 2. Check for Git
+where git >nul 2>&1
+if %errorlevel% neq 0 goto :NO_GIT
+
+:CHECK_FFMPEG
+:: 3. Check for FFmpeg
+where ffmpeg >nul 2>&1
+if %errorlevel% neq 0 goto :FFMPEG_WARNING
+goto :CHECK_FILES
 
 :NO_GIT
 echo [ERROR] Git is NOT installed.
@@ -65,8 +74,8 @@ cd youtube-automation
 
 :VENV_START
 :: 5. Create Virtual Environment
-echo [STEP 2] Preparing Python Environment...
-python -m venv venv
+echo [STEP 2] Preparing Python Environment using !PY_CMD!...
+!PY_CMD! -m venv venv
 if %errorlevel% neq 0 goto :VENV_ERROR
 
 :: 6. Install Dependencies
