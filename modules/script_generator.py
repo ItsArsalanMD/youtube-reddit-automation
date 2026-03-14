@@ -75,7 +75,11 @@ Reddit Post:
 Return only the narration script.
 """
         response = self.model.generate_content(prompt)
-        return response.text.strip()
+        import re
+        script = response.text.strip()
+        # Append a comma to sentence endings for better TTS pacing
+        script = re.sub(r'([.!?])(\s|$)', r'\1,\2', script)
+        return script
 
     def generate_metadata(self, script):
         title_prompt = f"""

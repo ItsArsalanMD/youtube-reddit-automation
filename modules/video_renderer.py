@@ -48,10 +48,43 @@ class VideoRenderer:
             print(f"Error getting video dimensions: {e}")
             return None, None
 
-    def render_video(self, audio_path, srt_path, output_path, overlay_path=None):
+    def _get_font_info(self, target_font="Titan One"):
+        """
+        Checks if a font is installed on Windows. Returns (actual_font_name, font_file_path).
+        Checks both HKLM (System) and HKCU (User) font registries.
+        """
+        import winreg
+        registries = [winreg.HKEY_LOCAL_MACHINE, winreg.HKEY_CURRENT_USER]
+        reg_path = r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts"
+        
+        for hkey in registries:
+            try:
+                with winreg.OpenKey(hkey, reg_path) as key:
+                    i = 0
+                    while True:
+                        try:
+                            # EnumValue returns (value_name, value_data, value_type)
+                            font_val_name, font_val_data, _ = winreg.EnumValue(key, i)
+                            # Check if target_font is a substring (handles "Titan One (TrueType)")
+                            if target_font.lower() in font_val_name.lower():
+                                return target_font, font_val_data
+                            i += 1
+                        except OSError:
+                            break
+            except Exception:
+                continue
+        
+        print(f"Font '{target_font}' not found. Falling back to Arial.")
+        return "Arial", None
+
+    def render_video(self, audio_path, srt_path, output_path, overlay_path=None, font_name="Titan One"):
         """
         Renders the final video using FFmpeg, optionally adding an image overlay.
         """
+        # Determine the best font to use and its location
+        actual_font, font_path = self._get_font_info(font_name)
+        fontsdir = os.path.dirname(font_path) if font_path else None
+        
         # Get audio duration first for the -t flag
         audio_duration = self.get_video_duration(audio_path)
         if not audio_duration:
@@ -60,12 +93,17 @@ class VideoRenderer:
 
         # Base inputs
         input_args = []
+        should_split = overlay_path and os.path.exists(overlay_path)
+        
         if not os.path.exists(self.background_video):
             # Create a placeholder if not exists (solid color)
             print(f"Background video {self.background_video} not found. Using placeholder.")
             input_args.extend(['-f', 'lavfi', '-i', 'color=c=black:s=1080x1920:d=600']) # 10 min placeholder
-            # Base video is stream [0:v]
-            vf_base = "scale=1080:1920[bg]"
+            vf_base = "scale=1080:1920"
+            if should_split:
+                vf_base += ",split[bg][bg_overlay]"
+            else:
+                vf_base += "[bg]"
         else:
             # Pick a random start time
             duration = self.get_video_duration(self.background_video)
@@ -83,18 +121,40 @@ class VideoRenderer:
             if w and h and w > h:
                 required_w = int(h * (9/16))
                 print(f"Horizontal video detected ({w}x{h}). Auto-cropping to {required_w}x{h} (9:16).")
-                vf_base = f"crop={required_w}:{h}:(iw-{required_w})/2:0,scale=1080:1920,split[bg][bg_overlay]"
+                vf_base = f"crop={required_w}:{h}:(iw-{required_w})/2:0,scale=1080:1920"
             else:
-                vf_base = "scale=1080:1920,split[bg][bg_overlay]"
+                vf_base = "scale=1080:1920"
+            
+            if should_split:
+                vf_base += ",split[bg][bg_overlay]"
+            else:
+                vf_base += "[bg]"
 
         input_args.extend(['-i', audio_path])
         
         # Build complex filter
         filter_complex = [vf_base]
         escaped_srt = srt_path.replace("\\", "/").replace(":", "\\:")
-        sub_filter = f"[bg]subtitles='{escaped_srt}':force_style='Alignment=10,FontName=Arial,FontSize=22,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=2,Shadow=1.5,Bold=1'[sub_out]"
         
-        if overlay_path and os.path.exists(overlay_path):
+        # Dynamic style based on font
+        if actual_font == "Titan One":
+            style = "Alignment=10,FontSize=28,PrimaryColour=&H0000FFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=3,Shadow=2,Bold=1" # Yellow/Titan style
+        else:
+            style = "Alignment=10,FontSize=22,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=2,Shadow=1.5,Bold=1"
+            
+        if srt_path.lower().endswith('.ass'):
+            sub_filter = f"[bg]subtitles='{escaped_srt}'"
+        else:
+            sub_filter = f"[bg]subtitles='{escaped_srt}':force_style='FontName={actual_font},{style}'"
+        
+        if fontsdir:
+            # Escape backslashes for FFmpeg Windows paths and escape colon
+            escaped_fontsdir = fontsdir.replace('\\', '/').replace(':', '\\:')
+            sub_filter += f":fontsdir='{escaped_fontsdir}'"
+        
+        sub_filter += "[sub_out]"
+        
+        if should_split:
             input_args.extend(['-i', overlay_path])
             # The background is [0:v], audio is [1:a], overlay is [2:v]
             filter_complex.append(sub_filter)

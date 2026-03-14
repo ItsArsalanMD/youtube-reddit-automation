@@ -4,3 +4,7 @@ __pycache__/
 data/
 assets/
 .agents/
+client_secrets.json
+venv/
+.streamlit/
+*.log

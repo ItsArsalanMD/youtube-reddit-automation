@@ -1,6 +1,10 @@
 import asyncio
 import edge_tts
 import os
+import re
+import subprocess
+import tempfile
+import shutil
 
 class TTSGenerator:
     def __init__(self, voice="en-US-GuyNeural", rate="+20%"):
@@ -9,10 +13,13 @@ class TTSGenerator:
 
     async def generate_audio(self, text, output_path):
         """
-        Generates audio from text and saves it to output_path.
+        Generates audio for the entire text at once for stable and natural pacing.
         """
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
         communicate = edge_tts.Communicate(text, self.voice, rate=self.rate)
         await communicate.save(output_path)
+        return output_path
+            
         return output_path
 
 def run_tts(text, output_path, voice="en-US-GuyNeural", rate="+20%"):

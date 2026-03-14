@@ -9,13 +9,18 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 CLIENT_SECRETS_FILE = os.getenv("YOUTUBE_CLIENT_SECRETS_FILE", "client_secrets.json")
 
 # This scope allows for full YouTube account access.
-SCOPES = ['https://www.googleapis.com/auth/youtube.upload']
+SCOPES = [
+    'https://www.googleapis.com/auth/youtube.upload',
+    'https://www.googleapis.com/auth/youtube.readonly'
+]
 API_SERVICE_NAME = 'youtube'
 API_VERSION = 'v3'
 
 class YouTubeUploader:
-    def __init__(self):
+    def __init__(self, credentials=None):
         self.youtube = None
+        if credentials:
+            self.youtube = build(API_SERVICE_NAME, API_VERSION, credentials=credentials)
 
     def authenticate(self):
         """
@@ -23,14 +28,31 @@ class YouTubeUploader:
         """
         if not os.path.exists(CLIENT_SECRETS_FILE):
             print(f"Error: {CLIENT_SECRETS_FILE} not found.")
-            return False
+            return None
 
         flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRETS_FILE, SCOPES)
         credentials = flow.run_local_server(port=0)
         self.youtube = build(API_SERVICE_NAME, API_VERSION, credentials=credentials)
-        return True
+        return credentials
 
-    def upload_video(self, video_path, title, description, tags=None, category_id="22", privacy_status="private"):
+    def get_channel_info(self):
+        """
+        Fetches the authenticated user's channel information.
+        """
+        if not self.youtube:
+            return None
+        
+        request = self.youtube.channels().list(
+            part="snippet,contentDetails,statistics",
+            mine=True
+        )
+        response = request.execute()
+        
+        if response.get('items'):
+            return response['items'][0]
+        return None
+
+    def upload_video(self, video_path, title, description, tags=None, category_id="22", privacy_status="private", publish_at=None):
         """
         Uploads a video to YouTube.
         """
@@ -50,6 +72,11 @@ class YouTubeUploader:
                 'selfDeclaredMadeForKids': False,
             }
         }
+
+        if publish_at:
+            # publishAt requires privacyStatus to be 'private'
+            body['status']['publishAt'] = publish_at
+            body['status']['privacyStatus'] = 'private'
 
         # Call the API's videos.insert method to create and upload the video.
         insert_request = self.youtube.videos().insert(
