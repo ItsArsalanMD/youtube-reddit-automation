@@ -1,6 +1,7 @@
 import asyncio
 import edge_tts
 import os
+from modules.config import DATA_DIR
 import re
 import subprocess
 import tempfile
@@ -33,7 +34,7 @@ def run_tts(text, output_path, voice="en-US-GuyNeural", rate="+20%"):
 if __name__ == "__main__":
     # Test generator
     test_text = "So here's what happened. My sister got engaged last month and suddenly expected me to pay for everything."
-    test_output = "d:/Automation/data/audio/test_narration.mp3"
+    test_output = os.path.join(DATA_DIR, "audio", "test_narration.mp3")
     
     # Ensure directory exists
     os.makedirs(os.path.dirname(test_output), exist_ok=True)

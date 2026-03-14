@@ -3,10 +3,11 @@ import os
 import glob
 import datetime
 from modules.youtube_uploader import YouTubeUploader
+from modules.config import DATA_DIR
 
 st.header("📤 Video Upload & Management")
 
-video_dir = "d:/Automation/data/videos"
+video_dir = os.path.join(DATA_DIR, "videos")
 if not os.path.exists(video_dir):
     os.makedirs(video_dir)
 

@@ -9,6 +9,7 @@ from modules.tts_generator import run_tts
 from modules.caption_generator import CaptionGenerator
 from modules.video_renderer import VideoRenderer
 from modules.title_generator import TitleGenerator
+from modules.config import DATA_DIR, ASSETS_DIR
 
 st.header("🎬 Video Generation")
 
@@ -69,7 +70,7 @@ if st.session_state.get('script'):
 if st.session_state.get('script'):
     if st.button("🚀 Render Final Video"):
         with st.spinner("Processing... This involves TTS, Captions, and FFmpeg rendering."):
-            base_dir = "d:/Automation/data"
+            base_dir = DATA_DIR
             
             raw_title = st.session_state.metadata.get('title', 'final_short')
             safe_title = re.sub(r'[^\w\-_\. ]', '', raw_title).strip().replace(' ', '_')
@@ -121,13 +122,13 @@ if st.session_state.get('script'):
             # Step C: Render
             st.write("Step 3/3: Rendering Video (FFmpeg)...")
             
-            assets_dir = "d:/Automation/assets"
+            assets_dir = ASSETS_DIR
             mp4_files = glob.glob(os.path.join(assets_dir, "*.mp4"))
             
             if mp4_files:
                 renderer.background_video = random.choice(mp4_files)
             else:
-                renderer.background_video = "d:/Automation/assets/placeholder.mp4"
+                renderer.background_video = os.path.join(ASSETS_DIR, "placeholder.mp4")
                 
             success = renderer.render_video(audio_path, ass_path, video_path, overlay_path=overlay_path, font_name=actual_font)
             

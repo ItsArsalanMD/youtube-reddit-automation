@@ -1,9 +1,12 @@
 import subprocess
 import os
 import random
+from modules.config import ASSETS_DIR, DATA_DIR
 
 class VideoRenderer:
-    def __init__(self, background_video="d:/Automation/assets/minecraft_parkour.mp4"):
+    def __init__(self, background_video=None):
+        if background_video is None:
+            background_video = os.path.join(ASSETS_DIR, "minecraft_parkour.mp4")
         self.background_video = background_video
 
     def get_video_duration(self, video_path):
@@ -196,9 +199,9 @@ class VideoRenderer:
 
 if __name__ == "__main__":
     # Test renderer
-    audio = "d:/Automation/data/audio/test_narration.mp3"
-    srt = "d:/Automation/data/captions/test_captions.srt"
-    output = "d:/Automation/data/videos/test_output.mp4"
+    audio = os.path.join(DATA_DIR, "audio", "test_narration.mp3")
+    srt = os.path.join(DATA_DIR, "captions", "test_captions.srt")
+    output = os.path.join(DATA_DIR, "videos", "test_output.mp4")
     
     os.makedirs(os.path.dirname(output), exist_ok=True)
     

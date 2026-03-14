@@ -1,5 +1,6 @@
 import whisper
 import os
+from modules.config import DATA_DIR
 from datetime import timedelta
 
 class CaptionGenerator:
@@ -123,8 +124,8 @@ class CaptionGenerator:
 if __name__ == "__main__":
     # Test generator
     # Requires a test audio file to exist
-    audio_file = "d:/Automation/data/audio/test_narration.mp3"
-    output_srt = "d:/Automation/data/captions/test_captions.srt"
+    audio_file = os.path.join(DATA_DIR, "audio", "test_narration.mp3")
+    output_srt = os.path.join(DATA_DIR, "captions", "test_captions.srt")
     
     if os.path.exists(audio_file):
         os.makedirs(os.path.dirname(output_srt), exist_ok=True)

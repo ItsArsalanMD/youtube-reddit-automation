@@ -1,4 +1,5 @@
 import os
+from modules.config import DATA_DIR
 from PIL import Image, ImageDraw, ImageFont
 import textwrap
 
@@ -113,6 +114,6 @@ class TitleGenerator:
 if __name__ == "__main__":
     test_title = "AITA for refusing to pay for my sister's extravagant destination wedding even though I make good money?"
     generator = TitleGenerator()
-    out_path = "d:/Automation/data/overlays/test_overlay_direct.png"
+    out_path = os.path.join(DATA_DIR, "overlays", "test_overlay_direct.png")
     out = generator.generate_title_image(test_title, out_path)
     print(f"Test overlay generated at: {out}")
