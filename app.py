@@ -15,6 +15,8 @@ st.set_page_config(
 # Initialize global session state
 def init_state():
     # Configuration
+    if 'content_type' not in st.session_state:
+        st.session_state.content_type = "Reddit Stories"
     if 'subreddit' not in st.session_state:
         st.session_state.subreddit = "AmItheAsshole"
     if 'timeframe' not in st.session_state:

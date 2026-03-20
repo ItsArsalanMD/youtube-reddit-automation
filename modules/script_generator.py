@@ -107,12 +107,90 @@ Story:
 
 Return only the description.
 """
+        hook_prompt = f"""
+Write a short, engaging text hook to overlay on the screen for the first 3 seconds to grab the viewer's attention.
+
+Rules:
+- Maximum 8 words
+- Clickbaity and dramatic
+- No emojis
+
+Story:
+{script}
+
+Return only the hook text.
+"""
         title_resp = self.model.generate_content(title_prompt)
         desc_resp = self.model.generate_content(desc_prompt)
+        hook_resp = self.model.generate_content(hook_prompt)
         
         return {
             "title": title_resp.text.strip(),
-            "description": desc_resp.text.strip()
+            "description": desc_resp.text.strip(),
+            "hook": hook_resp.text.strip().replace('"', '')
+        }
+
+    def generate_psychology_script(self, topic):
+        prompt = f"""
+You are writing scripts for viral YouTube Shorts.
+Write an engaging narration about psychological facts related to the following topic.
+
+Rules:
+- Maximum 120 words
+- Hook in first sentence
+- Conversational and intriguing tone
+- State 3-4 interesting psychological facts
+- End with a thought-provoking question
+
+Topic:
+{topic}
+
+Return only the narration script.
+"""
+        response = self.model.generate_content(prompt)
+        import re
+        script = response.text.strip()
+        # Append a comma to sentence endings for better TTS pacing
+        script = re.sub(r'([.!?])(\s|$)', r'\1,\2', script)
+        return script
+
+    def generate_psychology_metadata(self, script):
+        title_prompt = f"""
+Create a viral YouTube Shorts title for a psychological facts video.
+
+Rules:
+- Maximum 60 characters
+- Add curiosity
+- Use emoji
+
+Script:
+{script}
+
+Return only the title.
+"""
+        desc_prompt = f"""
+Write a YouTube description for a psychological facts video.
+
+Rules:
+- 2 short paragraphs
+- Include keywords: psychology facts, mental health, human behavior
+
+Script:
+{script}
+
+Return only the description.
+"""
+        title_resp = self.model.generate_content(title_prompt)
+        desc_resp = self.model.generate_content(desc_prompt)
+        
+        # Extract the first 6 words of the script for the hook
+        words = script.split()
+        hook_text = " ".join(words[:6]).replace('"', '').rstrip(',.!?')
+        
+        return {
+            "title": title_resp.text.strip(),
+            "description": desc_resp.text.strip(),
+            "hook": hook_text
         }
 
 if __name__ == "__main__":

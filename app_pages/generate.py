@@ -13,42 +13,54 @@ from modules.config import DATA_DIR, ASSETS_DIR
 
 st.header("🎬 Video Generation")
 
-# 1. Fetch Posts
-if st.button("🔍 Fetch Top Posts"):
-    subreddit = st.session_state.get('subreddit', 'AmItheAsshole')
-    limit = st.session_state.get('limit', 10)
-    timeframe = st.session_state.get('timeframe', 'day')
-    
-    with st.spinner(f"Fetching posts from r/{subreddit}..."):
-        fetcher = RedditFetcher()
-        st.session_state.posts = fetcher.fetch_top_posts(subreddit, limit=limit, timeframe=timeframe)
-        st.success(f"Found {len(st.session_state.posts)} text posts.")
+# 1. Fetch Posts / Select Topic
+if st.session_state.get('content_type', 'Reddit Stories') == 'Reddit Stories':
+    if st.button("🔍 Fetch Top Posts"):
+        subreddit = st.session_state.get('subreddit', 'AmItheAsshole')
+        limit = st.session_state.get('limit', 10)
+        timeframe = st.session_state.get('timeframe', 'day')
+        
+        with st.spinner(f"Fetching posts from r/{subreddit}..."):
+            fetcher = RedditFetcher()
+            st.session_state.posts = fetcher.fetch_top_posts(subreddit, limit=limit, timeframe=timeframe)
+            st.success(f"Found {len(st.session_state.posts)} text posts.")
 
-# 2. Display Posts
-if st.session_state.get('posts'):
-    post_titles = [f"{p['score']} | {p['title'][:50]}..." for p in st.session_state.posts]
-    selected_idx = st.selectbox("Select a post to process", range(len(post_titles)), format_func=lambda i: post_titles[i], key="post_selector")
-    st.session_state.selected_post = st.session_state.posts[selected_idx]
-    
-    st.markdown(f"### Selected: {st.session_state.selected_post['title']}")
-    with st.expander("Show Post Body"):
-        st.write(st.session_state.selected_post['body'])
+    # 2. Display Posts
+    if st.session_state.get('posts'):
+        post_titles = [f"{p['score']} | {p['title'][:50]}..." for p in st.session_state.posts]
+        selected_idx = st.selectbox("Select a post to process", range(len(post_titles)), format_func=lambda i: post_titles[i], key="post_selector")
+        st.session_state.selected_post = st.session_state.posts[selected_idx]
+        
+        st.markdown(f"### Selected: {st.session_state.selected_post['title']}")
+        with st.expander("Show Post Body"):
+            st.write(st.session_state.selected_post['body'])
 
 # 3. Generate Script
-if st.session_state.get('selected_post'):
+if st.session_state.get('content_type', 'Reddit Stories') == 'Reddit Stories':
+    if st.session_state.get('selected_post'):
+        if st.button("📝 Generate Script & Metadata"):
+            with st.spinner("Generating script with Gemini..."):
+                gen = ScriptGenerator()
+                st.session_state.script = gen.generate_script(
+                    st.session_state.selected_post['title'], 
+                    st.session_state.selected_post['body']
+                )
+                st.session_state.metadata = gen.generate_metadata(st.session_state.script)
+                
+                # Use short overlay title hook from generated scripts
+                st.session_state.visual_hook_title = st.session_state.metadata.get('hook', '')
+                
+                st.success("Script and Metadata generated!")
+elif st.session_state.get('content_type', 'Reddit Stories') == 'Psychological Facts':
+    topic = st.text_input("Psychological Facts Topic", value="Human Behavior")
     if st.button("📝 Generate Script & Metadata"):
         with st.spinner("Generating script with Gemini..."):
             gen = ScriptGenerator()
-            st.session_state.script = gen.generate_script(
-                st.session_state.selected_post['title'], 
-                st.session_state.selected_post['body']
-            )
-            st.session_state.metadata = gen.generate_metadata(st.session_state.script)
+            st.session_state.script = gen.generate_psychology_script(topic)
+            st.session_state.metadata = gen.generate_psychology_metadata(st.session_state.script)
             
-            # Extract first sentence for visual hook
-            sentences = re.split(r'(?<=[.!?]) +', st.session_state.script)
-            if sentences:
-                st.session_state.visual_hook_title = sentences[0].strip()
+            # Use short overlay title hook from generated scripts
+            st.session_state.visual_hook_title = st.session_state.metadata.get('hook', '')
             
             st.success("Script and Metadata generated!")
 
@@ -116,7 +128,10 @@ if st.session_state.get('script'):
             # Step B2: Title Overlay
             st.write("Step 2.5/3: Generating Hook Overlay...")
             title_gen = TitleGenerator()
-            subreddit_label = f"r/{st.session_state.get('subreddit', 'Reddit')}"
+            if st.session_state.get('content_type', 'Reddit Stories') == 'Psychological Facts':
+                subreddit_label = "Fact"
+            else:
+                subreddit_label = f"r/{st.session_state.get('subreddit', 'Reddit')}"
             title_gen.generate_title_image(st.session_state.visual_hook_title, overlay_path, subreddit=subreddit_label)
             
             # Step C: Render

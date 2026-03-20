@@ -11,17 +11,29 @@ def get_ffmpeg_version():
 
 st.header("⚙️ Global Configuration")
 
-# Reddit Configuration Section
-st.subheader("🤖 Reddit Settings")
-col1, col2, col3 = st.columns(3)
-with col1:
-    st.session_state.subreddit = st.text_input("Subreddit", value=st.session_state.get('subreddit', 'AmItheAsshole'))
-with col2:
-    st.session_state.timeframe = st.selectbox("Timeframe", ["day", "week", "month", "all"], index=["day", "week", "month", "all"].index(st.session_state.get('timeframe', 'day')))
-with col3:
-    st.session_state.limit = st.slider("Posts to fetch", 1, 50, st.session_state.get('limit', 10))
+# Content Type Selection
+st.subheader("📚 Content Type")
+st.session_state.content_type = st.radio(
+    "Select the type of content you want to generate:",
+    ["Reddit Stories", "Psychological Facts"],
+    index=["Reddit Stories", "Psychological Facts"].index(st.session_state.get('content_type', 'Reddit Stories')),
+    horizontal=True
+)
 
 st.divider()
+
+if st.session_state.content_type == "Reddit Stories":
+    # Reddit Configuration Section
+    st.subheader("🤖 Reddit Settings")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.session_state.subreddit = st.text_input("Subreddit", value=st.session_state.get('subreddit', 'AmItheAsshole'))
+    with col2:
+        st.session_state.timeframe = st.selectbox("Timeframe", ["day", "week", "month", "all"], index=["day", "week", "month", "all"].index(st.session_state.get('timeframe', 'day')))
+    with col3:
+        st.session_state.limit = st.slider("Posts to fetch", 1, 50, st.session_state.get('limit', 10))
+    
+    st.divider()
 
 # YouTube Configuration Section
 st.subheader("📺 YouTube Settings")

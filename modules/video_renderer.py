@@ -84,6 +84,7 @@ class VideoRenderer:
         """
         Renders the final video using FFmpeg, optionally adding an image overlay.
         """
+        import glob
         # Determine the best font to use and its location
         actual_font, font_path = self._get_font_info(font_name)
         fontsdir = os.path.dirname(font_path) if font_path else None
@@ -98,6 +99,9 @@ class VideoRenderer:
         input_args = []
         should_split = overlay_path and os.path.exists(overlay_path)
         
+        input_idx = 0
+        
+        # 0. Background video
         if not os.path.exists(self.background_video):
             # Create a placeholder if not exists (solid color)
             print(f"Background video {self.background_video} not found. Using placeholder.")
@@ -132,10 +136,15 @@ class VideoRenderer:
                 vf_base += ",split[bg][bg_overlay]"
             else:
                 vf_base += "[bg]"
+        bg_vid_idx = input_idx
+        input_idx += 1
 
+        # 1. Narrator audio
         input_args.extend(['-i', audio_path])
+        narrator_aud_idx = input_idx
+        input_idx += 1
         
-        # Build complex filter
+        # Build complex filter for subtitles
         filter_complex = [vf_base]
         escaped_srt = srt_path.replace("\\", "/").replace(":", "\\:")
         
@@ -157,18 +166,51 @@ class VideoRenderer:
         
         sub_filter += "[sub_out]"
         
+        # 2. Overlay (optional)
         if should_split:
             input_args.extend(['-i', overlay_path])
-            # The background is [0:v], audio is [1:a], overlay is [2:v]
+            overlay_vid_idx = input_idx
+            input_idx += 1
+            
             filter_complex.append(sub_filter)
-            # 1. Hide captions for first 3 seconds by overlaying clean background back on top
+            # Hide captions for first 3 seconds by overlaying clean background back on top
             filter_complex.append(f"[sub_out][bg_overlay]overlay=enable='between(t,0,3)'[no_subs_hook]")
-            # 2. Overlay the Reddit box on top of the clean area
-            filter_complex.append(f"[no_subs_hook][2:v]overlay=(W-w)/2:(H-h)/2:enable='between(t,0,3)'[final_v]")
+            # Overlay the Reddit box on top of the clean area
+            filter_complex.append(f"[no_subs_hook][{overlay_vid_idx}:v]overlay=(W-w)/2:(H-h)/2:enable='between(t,0,3)'[final_v]")
         else:
             # Route [sub_out] directly to output
             sub_filter = sub_filter.replace("[sub_out]", "[final_v]")
             filter_complex.append(sub_filter)
+
+        # 3. Background Music (optional)
+        bg_music_dir = os.path.join(ASSETS_DIR, "background_music")
+        
+        # Find any audio files
+        bg_music_files = []
+        if os.path.exists(bg_music_dir):
+            bg_music_files.extend(glob.glob(os.path.join(bg_music_dir, "*.mp3")))
+            bg_music_files.extend(glob.glob(os.path.join(bg_music_dir, "*.m4a")))
+            bg_music_files.extend(glob.glob(os.path.join(bg_music_dir, "*.wav")))
+            
+        final_audio_map = f"{narrator_aud_idx}:a:0"
+        
+        if bg_music_files:
+            bg_music_path = random.choice(bg_music_files)
+            print(f"Adding background music: {bg_music_path}")
+            
+            input_args.extend(['-stream_loop', '-1', '-i', bg_music_path])
+            bg_music_aud_idx = input_idx
+            input_idx += 1
+            
+            # Mix narrator and background music
+            # Volume boost for narrator, very low for bg
+            # amix defaults to halving the volume, so we boost it afterwards
+            filter_complex.append(f"[{narrator_aud_idx}:a]volume=1.0[n_a]")
+            filter_complex.append(f"[{bg_music_aud_idx}:a]volume=0.25[b_a]")
+            filter_complex.append(f"[n_a][b_a]amix=inputs=2:duration=first[amixed]")
+            filter_complex.append(f"[amixed]volume=2.0[final_a]")
+            
+            final_audio_map = "[final_a]"
 
         ffmpeg_bin = "ffmpeg"
         ffmpeg_path = os.getenv("FFMPEG_PATH")
@@ -180,7 +222,7 @@ class VideoRenderer:
         ] + input_args + [
             '-filter_complex', ";".join(filter_complex),
             '-map', '[final_v]',   # Mapped video stream
-            '-map', '1:a:0',       # Fixed audio index (it's always second input)
+            '-map', final_audio_map,   # Mapped audio stream
             '-c:v', 'libx264',
             '-preset', 'veryfast',
             '-c:a', 'aac',
